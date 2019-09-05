@@ -1,4 +1,7 @@
 # Raw MQTT to Azure IoT Hub (in Python) without device SDK
+
+![MQTT logotype](mqtt.png)
+
 A simulated device that implements cloud-to-device and device-to-cloud messaging as well as direct methods over MQTT without using the Azure IoT Device SDK.
 
 This project is using Paho to talk MQTT to Azure IoT Hub.
