@@ -50,3 +50,8 @@ az iot hub invoke-device-method \
     --method-name hey \
     --method-payload '{"hey device": "this is a direct method invocation"}'
 ```
+
+## KNOWN ISSUES
+> _Hey, Python is caveman simple, you should rewrite this in C, the language real people use for IoT._
+
+![](https://media.giphy.com/media/11QrDH2UmehokM/giphy.gif)
