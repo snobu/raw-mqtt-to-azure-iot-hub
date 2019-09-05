@@ -19,6 +19,18 @@ az iot hub generate-sas-token \
     --duration 3600
 ```
 
+Place the SAS key into a file named `sas.token`.
+
+You'll most probably want a virtual environment first -
+https://docs.python.org/3/library/venv.html
+
+Target Python 3.6+.
+
+Run the thing (activate the venv first if using one):
+```
+$ python run.py
+```
+
 ## Send cloud to device message
 ```
 az iot device c2d-message send \
