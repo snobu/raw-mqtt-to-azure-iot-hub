@@ -45,7 +45,7 @@ az iot device c2d-message send \
 ## Invoke direct method
 ```
 az iot hub invoke-device-method \
-    --hub-name poorlyfundedskynet
+    --hub-name poorlyfundedskynet \
     --device-id yolo \
     --method-name hey \
     --method-payload '{"hey device": "this is a direct method invocation"}'
