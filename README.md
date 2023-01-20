@@ -19,7 +19,8 @@ az iot hub generate-sas-token \
     --hub-name YOUR_IOT_HUB_NAME \
     --device-id YOUR_DEVICE_ID \
     --key-type primary \
-    --duration 3600
+    --duration 3600 \
+    --output tsv
 ```
 
 Place the SAS key into a file named `sas.token`.

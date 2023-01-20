@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import sys
 import ssl
 import certifi
@@ -9,12 +10,22 @@ from colorama import init
 init()
 from colorama import Fore, Back, Style
 
+# Set Device ID, should be the same as in the SAS token
+DEVICE_ID = 'RawMqttDevice'
+
 # Generate the SAS token with azure-cli
 # https://github.com/azure/azure-iot-cli-extension#installation
-# Example: az iot hub generate-sas-token --hub-name YOUR_IOT_HUB_NAME --device-id YOUR_DEVICE_ID --key-type primary --duration 3600
+# Example:
+#     az iot hub generate-sas-token \
+#         --hub-name YOUR_IOT_HUB_NAME \
+#         --device-id YOUR_DEVICE_ID \
+#         --key-type primary \
+#         --duration 3600 \
+#         --output tsv
+
 try:
     f = open("sas.token", "r")
-    SAS_TOKEN = f.readline()
+    SAS_TOKEN = f.readline().rstrip('\n\r')
 except FileNotFoundError:
     print('File "sas.token" not found.\nCreate it and place the SAS token on the first line.')
     sys.exit(404)
@@ -39,7 +50,7 @@ def on_connect(client, userdata, flags, rc):
     # reconnect then subscriptions will be renewed.
     #client.subscribe("$SYS/#")
     print('Subscribing to device specific message topic...')
-    client.subscribe('devices/yolo/messages/devicebound/#')
+    client.subscribe(f'devices/{DEVICE_ID}/messages/devicebound/#')
     print('Subscribing to direct method topic...')
     client.subscribe('$iothub/methods/POST/#')
 
@@ -51,19 +62,20 @@ def on_connect(client, userdata, flags, rc):
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
     # Handle cloud to device messages
-    if 'devices/yolo/messages/devicebound/' in msg.topic:
+    if f'devices/{DEVICE_ID}/messages/devicebound/' in msg.topic:
         print(Back.CYAN +
-            '*** Received Cloud to Device Message:\n' +
-            Style.RESET_ALL +
+            '*** Received Cloud to Device Message:' +
+            Style.RESET_ALL + '\n' +
             f'      Topic: {msg.topic}\n' +
-            f'      Payload: {msg.payload}\n')
+            f'      Payload: {msg.payload}\n' +
+            f'      QoS: {msg.qos}\n')
 
     # Handle direct methods
     if '$iothub/methods/' in msg.topic:
         direct_method = extract_direct_method(msg)
         print(Back.YELLOW +
-            '*** Received Direct Method invocation:\n' +
-            Style.RESET_ALL +
+            '*** Received Direct Method invocation:' +
+            Style.RESET_ALL + '\n' +
             f'            Topic: {msg.topic}\n' +
             f'      Method name: {direct_method.name}\n' +
             f'       Request id: {direct_method.rid}\n')
@@ -94,7 +106,7 @@ def on_publish(client, userdata, result):
 
 # Always use MQTT v3.1.1 with Azure IoT Hub.
 # MQTT v3.1 won't be able to connect at all (Paho error 3 or 5).
-client = mqtt.Client(client_id='yolo', clean_session=True, userdata=None, protocol=mqtt.MQTTv311, transport='tcp')
+client = mqtt.Client(client_id=DEVICE_ID, clean_session=True, userdata=None, protocol=mqtt.MQTTv311, transport='tcp')
 client.on_connect = on_connect
 client.on_message = on_message
 client.on_publish = on_publish
@@ -106,7 +118,12 @@ print(f'Using CA bundle provided by certifi, version {certifi.__version__}.')
 # attempt to use the default CA on the system.
 client.tls_set(ca_certs=ca_bundle, tls_version=ssl.PROTOCOL_TLSv1_2)
 client.tls_insecure_set(False)
-client.username_pw_set(username='poorlyfundedskynet.azure-devices.net/yolo/?api-version=2018-06-30', password=SAS_TOKEN)
+
+# DEBUG
+# print(f'USERNAME: poorlyfundedskynet.azure-devices.net/{DEVICE_ID}/?api-version=2021-04-12')
+# print(f'PASSWORD: {SAS_TOKEN}')
+
+client.username_pw_set(username=f'poorlyfundedskynet.azure-devices.net/{DEVICE_ID}/?api-version=2021-04-12', password=SAS_TOKEN)
 #client._ssl_context.load_verify_locations(cafile='badssl.crl.pem')
 #client._ssl_context.load_verify_locations(cafile='microsoftca4.crl.pem')
 #client._ssl_context.verify_flags = ssl.VERIFY_CRL_CHECK_LEAF
@@ -114,7 +131,6 @@ client.connect('poorlyfundedskynet.azure-devices.net', 8883, 60)
 #client.connect('revoked.badssl.com', 443, 60)
 print('------------ TLS session info ----------')
 print(client._ssl_context.protocol)
-print(client._ssl_context.cert_store_stats())
 print('----------------------------------------')
 
 # Blocking call that processes network traffic, dispatches callbacks and
@@ -128,6 +144,8 @@ SLEEP_DELAY = 500
 while True:
     time.sleep(2)
     print('Publishing message to broker..')
-    client.publish('devices/yolo/messages/events/', payload=f"hey hey this is yolo at {time.strftime('%Y-%m-%d %H:%M:%S')}", qos=1, retain=False)
+    client.publish(f'devices/{DEVICE_ID}/messages/events/',
+        payload=f"hey hey this is {DEVICE_ID} at {time.strftime('%Y-%m-%d %H:%M:%S')}",
+        qos=1, retain=False)
     print(f'Sleeping for {SLEEP_DELAY} seconds.')
     time.sleep(SLEEP_DELAY)
