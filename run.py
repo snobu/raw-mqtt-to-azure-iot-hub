@@ -91,7 +91,7 @@ def on_message(client, userdata, msg):
             qos=0,
             retain=False)
         print('Sent direct method response.')
-    
+
     print('Parsing msg.payload -')
     try:
         p = json.loads(str(msg.payload, 'utf-8'))
@@ -140,12 +140,19 @@ print('----------------------------------------')
 #client.loop_forever()
 client.loop_start()
 
-SLEEP_DELAY = 500
+SLEEP_DELAY = 10
 while True:
-    time.sleep(2)
     print('Publishing message to broker..')
+
+    message = {
+        "DeviceId": f"{DEVICE_ID}",
+        "Message": "Hey, this is a telemetry message sent to IoT Hub.",
+        "SentAt": f"{time.strftime('%Y-%m-%d %H:%M:%S')}"
+    }
+    json_message= json.dumps(message)
+
     client.publish(f'devices/{DEVICE_ID}/messages/events/',
-        payload=f"hey hey this is {DEVICE_ID} at {time.strftime('%Y-%m-%d %H:%M:%S')}",
-        qos=1, retain=False)
+        payload=json_message, qos=1, retain=False)
+
     print(f'Sleeping for {SLEEP_DELAY} seconds.')
     time.sleep(SLEEP_DELAY)
